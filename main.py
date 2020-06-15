@@ -41,6 +41,9 @@ for result in response_json:
         "Time Spent In Seconds": result['timeSpentSeconds'],
     })
 
+if len(results) == 0:
+    print("Nenhum registro encontrado")
+
 df = pd.DataFrame.from_dict(results)
 
 df.to_csv('worklog.csv', index=False)
