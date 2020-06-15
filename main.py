@@ -7,10 +7,10 @@ from requests.auth import HTTPBasicAuth
 
 url = "http://tools.dootax.com.br:8080/jira/rest/tempo-timesheets/4/worklogs/search"
 
-username = input("Insira o usuário do jira :")
-password = getpass.getpass("Insira a sua senha :")
-initialDate = input("Insira da data inicial (YYYY-MM-DD):")
-finalDate = input("Insira da data final (YYYY-MM-DD) :")
+username = input("Insira o usuário do jira : ")
+password = getpass.getpass("Insira a sua senha : ")
+initialDate = input("Insira da data inicial (YYYY-MM-DD): ")
+finalDate = input("Insira da data final (YYYY-MM-DD) : ")
 
 request_body = json.dumps({
     "from": initialDate,
@@ -43,6 +43,6 @@ for result in response_json:
 
 df = pd.DataFrame.from_dict(results)
 
-df.to_csv('worklog.csv', index=False, sep=';')
+df.to_csv('worklog.csv', index=False)
 
 
