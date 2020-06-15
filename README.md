@@ -10,4 +10,4 @@ pip3 install -R requirements.txt
 python3 main.py
 ```
 
-Preencher os dados que será gerado o csv na raiz do projeto
+Arquivo csv será salvo na raiz do projeto
