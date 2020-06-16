@@ -3,20 +3,14 @@ import json
 import getpass
 import datetime
 from requests.auth import HTTPBasicAuth
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import Select
-from selenium.webdriver.support.ui import WebDriverWait
 
 url = "http://tools.dootax.com.br:8080/jira/rest/tempo-timesheets/4/worklogs/search"
 
 
-# username_absgp = input("Insira o usuário do absgp : ")
-# password_abssgp = input("Insira a senha do absgp : ")
+username_absgp = input("Insira o usuário do absgp : ")
+password_abssgp = getpass.getpass("Insira a senha do absgp : ")
 
-username_absgp = "renan.hartwig@deliverit.com.br"
-password_abssgp = "@Bryant2408"
-
+results = []
 
 def get_worklog():
     username = input("Insira o usuário do jira : ")
@@ -44,8 +38,6 @@ def get_worklog():
 
     response_json = response.json()
 
-    results = []
-
     for result in response_json:
         results.append({
             "Issue Key": result["issue"]["key"],
@@ -56,38 +48,59 @@ def get_worklog():
     return results
 
 def add_worklog():
-    option = Options()
-    option.add_argument('--no-sandbox')
-    option.add_argument('--disable-dev-shm-usage')
-    driver = webdriver.Chrome(options=option)
-    driver.implicitly_wait(5)  # in seconds
-    url = "http://gp.absoluta.net/login"
+    session = requests.Session()
+    session.post(
+        "http://gp.absoluta.net/login",
+        data={
+        'email': username_absgp,
+        'password': password_abssgp
+        }
+    )
 
-    try:
-        driver.get(url)
+    response = session.get("http://gp.absoluta.net/api/pm/timesheets/resource-calendars?period=2020-6")
 
-        element = driver.find_element_by_name("email")
-        element.send_keys(username_absgp)
+    if response.status_code != 200:
+        raise Exception("Credenciais inválidas")
 
-        element = driver.find_element_by_name("password")
-        element.send_keys(password_abssgp)
+    total = 0
 
-        driver.find_element_by_xpath("//*[@id='login']/button").click()
+    for result in results:
+        if result['Issue Key'] == 'DOON-1089':
+            schedule_id = 8156
+        elif str(result['Issue Key']).startswith('DOON'):
+            schedule_id = 8154
+        else:
+            schedule_id = 8150
 
-        errors = driver.find_elements_by_class_name("alert-danger")
+        issue_date = datetime.datetime.strptime(result["Start Time"], "%d/%m/%Y %H:%M")
+        start_time = issue_date.strftime("%H:%M")
+        time_spent = result['Time Spent In Seconds']
+        final_time = issue_date + datetime.timedelta(seconds=time_spent)
+        
+        payload = json.dumps({
+            "date": issue_date.strftime("%Y-%m-%d"),
+            "final_time":final_time.strftime("%H:%M"),
+            "initial_time":start_time,
+            "schedule_id":schedule_id,
+            "percentage":10
+        })
 
-        if len(errors) > 0:
-            print(errors[0])
-            raise Exception(errors[0].text)
+        response = session.post(
+            "http://gp.absoluta.net/api/user/timesheets",
+             data=payload,
+             headers={
+                    "Content-Type": "application/json",
+            }
+        )
 
+        if response.status_code == 201:
+            total += 1
 
-    except Exception as identifier:
-            print(identifier)
-    finally:
-        driver.quit()
-
+    print("Importados {} registros".format(total))
+    
 
 if __name__ == '__main__':
+    get_worklog()
     add_worklog()
 
 
